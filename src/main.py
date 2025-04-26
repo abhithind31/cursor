@@ -538,9 +538,11 @@ def main():
 
     status_details = "\n".join(status_lines)
     if summaries_failed:
-         status_details += f"\n<details><summary>Summarization Errors ({len(summaries_failed)})</summary>\n\n* {'\n* '.join(summaries_failed)}\n\n</details>"
+         failed_summaries_str = "* " + "\n* ".join(summaries_failed)
+         status_details += f"\\n<details><summary>Summarization Errors ({len(summaries_failed)})</summary>\\n\\n{failed_summaries_str}\\n\\n</details>"
     if reviews_failed:
-         status_details += f"\n<details><summary>Review Errors ({len(reviews_failed)})</summary>\n\n* {'\n* '.join(reviews_failed)}\n\n</details>"
+         failed_reviews_str = "* " + "\n* ".join(reviews_failed)
+         status_details += f"\\n<details><summary>Review Errors ({len(reviews_failed)})</summary>\\n\\n{failed_reviews_str}\\n\\n</details>"
 
     # Construct the full comment body
     # Use the generated/updated summaries from step 10
