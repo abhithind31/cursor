@@ -1,0 +1,58 @@
+# action.yml
+name: 'AI Code Review Bot Action'
+description: 'Runs Gemini-based code reviews on PR hunks triggered by a comment.'
+author: 'Your Name or Organization' # Optional: Add author info
+
+inputs:
+  github-token:
+    description: 'GitHub token for API calls. Defaults to the token provided by the workflow.'
+    required: false # Set to false as we'll default it
+    default: ${{ github.token }}
+  gemini-api-key:
+    description: 'API Key for the Google Gemini API.'
+    required: true # This must be provided by the user workflow
+  config-path:
+    description: 'Path to the gemini-reviewer.yml config file in the consuming repo.'
+    required: false
+    default: '.github/gemini-reviewer.yml'
+  gemini-model-name:
+    description: 'Name of the Gemini model to use (e.g., gemini-1.5-flash-latest, gemini-pro).'
+    required: false
+    default: 'gemini-1.5-flash-latest' # Default model
+
+runs:
+  using: 'composite'
+  steps:
+    # Note: The action runner automatically checks out the action's repository code ($GITHUB_ACTION_PATH)
+    # We don't need an explicit checkout step for the action code itself.
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' # Match your script's requirement
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "Installing dependencies from ${{ github.action_path }}/requirements.txt"
+        python -m pip install --upgrade pip
+        pip install -r ${{ github.action_path }}/requirements.txt
+
+    - name: Run AI Review Script
+      shell: bash
+      env:
+        # Map action inputs to environment variables expected by the script
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GEMINI_API_KEY: ${{ inputs.gemini-api-key }}
+        CONFIG_PATH: ${{ inputs.config-path }}
+        GEMINI_MODEL_NAME: ${{ inputs.gemini-model-name }}
+
+        # Pass standard context variables expected by the script
+        # These come from the *calling* workflow's context
+        GITHUB_EVENT_PATH: ${{ github.event_path }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_API_URL: ${{ github.api_url }}
+        PR_NUMBER: ${{ github.event.issue.number }} # Assuming trigger is issue_comment on a PR
+
+      # Run the script located within this action's repository code
+      run: python ${{ github.action_path }}/src/main.py 

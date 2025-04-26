@@ -1,0 +1,7 @@
+# requirements.txt
+
+requests>=2.26.0 # For GitHub API calls
+PyYAML>=5.4.1    # For parsing .github/gemini-reviewer.yml
+
+# Add google-generativeai when integrating the actual API
+google-generativeai>=0.4.0 

@@ -1,0 +1,92 @@
+# .github/code-review-action.yml 
+# NOTE: Intended path is .github/workflows/code-review.yml, placed here due to directory creation issues.
+
+name: AI Code Review
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    # Run only if the comment body starts with "/gemini-review"
+    # and the comment is on a pull request.
+    if: startsWith(github.event.comment.body, '/gemini-review') && github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read       # To read code contents (checkout)
+      pull-requests: write # To post review comments
+      issues: read         # To read issue (comment) details
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Checkout the PR branch head commit for accurate diff analysis
+          # Fetching the ref from the event payload ensures we get the code
+          # associated with the PR the comment was made on.
+          ref: ${{ github.event.issue.pull_request.head.sha }}
+          # Fetch depth 0 to get full history if needed for future features (e.g., comparing changes)
+          # fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Or your preferred version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install from requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run AI Review
+        id: run_ai_review # Give the step an ID for checking outcome
+        env:
+          # Essential secrets and context
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}       # Provided by GitHub Actions runner
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # User must set this repository secret
+          GITHUB_EVENT_PATH: ${{ github.event_path }}     # Path to the event payload JSON
+          GITHUB_REPOSITORY: ${{ github.repository }}     # owner/repo
+          GITHUB_API_URL: ${{ github.api_url }}           # URL for GitHub API (handles GH Enterprise)
+          # Pass PR number extracted from the event payload
+          PR_NUMBER: ${{ github.event.issue.number }}
+          # Optional: Pass model name if configurable
+          # GEMINI_MODEL_NAME: gemini-1.5-flash-latest
+        run: python src/main.py
+
+      # Optional: Add a reaction to the comment to indicate processing status
+      - name: Add reaction to comment
+        uses: actions/github-script@v7
+        # Run regardless of the review step's success/failure
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment_id = ${{ github.event.comment.id }};
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            // Get the outcome of the previous step using its ID
+            const run_status = '${{ steps.run_ai_review.outcome }}'; 
+            let reaction;
+
+            console.log(`AI Review script outcome: ${run_status}`);
+
+            if (run_status === 'success') {
+              reaction = 'rocket'; // Success
+            } else if (run_status === 'failure') {
+              reaction = 'confused'; // Failure
+            } else {
+              reaction = 'eyes'; // Skipped or cancelled
+            }
+            
+            try {
+              console.log(`Adding reaction '${reaction}' to comment ID ${comment_id}`);
+              await github.rest.reactions.createForIssueComment({
+                owner, repo, comment_id, content: reaction
+              });
+              console.log("Reaction added successfully.");
+            } catch (error) {
+              console.error(`Failed to add reaction: ${error}`);
+              // Fail gracefully if reaction fails
+            } 

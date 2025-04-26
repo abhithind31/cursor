@@ -1,0 +1,44 @@
+# .github/gemini-reviewer.yml
+
+# File exclusion patterns (uses gitignore glob syntax)
+# Defaults to empty if not provided
+exclude:
+  - "**/docs/**"
+  - "**/test/**"       # Common directory names for tests
+  - "**/tests/**"
+  - "**/__tests__/**"
+  - "**/__snapshots__/**"
+  - "*.lock"
+  - "*.log"
+  - "package-lock.json"
+  - "yarn.lock"
+  - "Pipfile.lock"
+  - "poetry.lock"
+  - "go.sum"
+  - "*.min.js"        # Exclude minified JS
+  - "*.min.css"       # Exclude minified CSS
+  - "**/dist/**"        # Common build output directory
+  - "**/build/**"
+  - "**/target/**"      # Common build output (Java/Rust)
+  - "**/*.config.js"   # Common config files
+  - "**/*.config.ts"
+  - "**/config/**"      # Common config directory
+
+# Custom review instructions for the AI model
+# These will be added to the prompt for each hunk review.
+# Keep it concise and focused.
+custom_instructions: |
+  Focus on identifying potential bugs, security vulnerabilities, and performance bottlenecks.
+  Ensure the code adheres to our company's Python style guide (PEP 8 with 100 char line limit).
+  Verify that logging is used appropriately for errors and significant events.
+  Do not suggest purely stylistic changes unless they violate the style guide.
+  Do not suggest adding code comments.
+
+# Optional: Jira integration settings (Phase 3)
+# jira:
+#   # Project keys to look for in PR titles/descriptions (e.g., "PROJ", "CORE")
+#   project_keys:
+#     - "ABC"
+#     - "XYZ"
+#   # How to extract ticket ID (e.g., regex pattern) - Optional, default might be simple [A-Z]+-\d+
+#   # ticket_id_pattern: "([A-Z]{2,5}-\d+)" 
