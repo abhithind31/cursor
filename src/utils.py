@@ -368,8 +368,7 @@ def extract_context_around_hunk(full_file_content, hunk_header, fallback_lines=2
     # Combine imports and block context
     final_context = imports_context
     if imports_context and block_context:
-        final_context += "\n\n---
-\n" # Separator
+        final_context += "\n\n---\n\n" # Separator
     final_context += block_context
 
     # Limit total context size? (Could do this here or in the calling function)
